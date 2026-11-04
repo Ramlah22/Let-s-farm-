@@ -15,11 +15,6 @@ export default function Home() {
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  const handleOpenAuth = (mode: "signin" | "getstarted") => {
-    setModalType(mode);
-    setSelectedItem(null);
-  };
-
   const handleMarketplaceAction = (item: any) => {
     if (item.buttonText.includes("Pre-Offer")) {
       setModalType("pre-offer");
@@ -38,20 +33,10 @@ export default function Home() {
     }
   };
 
-  const handleRegisterFarmer = () => {
-    setModalType("farmer-reg");
-    setSelectedItem(null);
-  };
-
-  const handlePartnerOfftaker = () => {
-    setModalType("offtaker-partner");
-    setSelectedItem(null);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
-      {/* 1. Navbar */}
-      <Navbar onOpenAuth={handleOpenAuth} />
+      {/* 1. Navbar with active authentication state & links */}
+      <Navbar />
 
       {/* Main Page Flow Matching PDF */}
       <main className="flex-1">
@@ -70,11 +55,8 @@ export default function Home() {
         {/* 6. No Smartphone? No Problem. Direct USSD & SMS Access */}
         <UssdSection />
 
-        {/* 7. Ready to Transform Your Farming CTA Banner */}
-        <CtaBanner
-          onRegisterFarmer={handleRegisterFarmer}
-          onPartnerOfftaker={handlePartnerOfftaker}
-        />
+        {/* 7. Ready to Transform Your Farming CTA Banner with direct signup routing */}
+        <CtaBanner />
       </main>
 
       {/* 8. Polished Modern Footer */}
