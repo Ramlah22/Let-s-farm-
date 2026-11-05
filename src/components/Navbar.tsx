@@ -156,16 +156,16 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* ── 2. FLOATING FOREST-GREEN PILL NAVBAR (Moves when scrolled with space at the top) ── */}
+      {/* ── 2. FLOATING GLASS PILL NAVBAR (hidden on mobile) ── */}
       <nav
         aria-label="Main Navigation"
-        className="fixed top-5 sm:top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto transition-all duration-300"
+        className="hidden sm:block fixed top-5 sm:top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto transition-all duration-300"
       >
         <div
-          className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full border shadow-2xl transition-all duration-300 max-w-[94vw] overflow-x-auto no-scrollbar ${
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-full border shadow-2xl transition-all duration-300 ${
             scrolled
-  ? "bg-[#7da66b]/50 backdrop-blur-xl border-white/30 shadow-black/20"
-  : "bg-[#a3c98d]/40 backdrop-blur-lg border-white/25 shadow-black/10"
+              ? "bg-[#7da66b]/50 backdrop-blur-xl border-white/30 shadow-black/20"
+              : "bg-[#a3c98d]/40 backdrop-blur-lg border-white/25 shadow-black/10"
           }`}
           style={{
             boxShadow: scrolled
@@ -177,7 +177,7 @@ export default function Navbar() {
             <Link
               key={link.label}
               href={link.href}
-              className="text-[12px] sm:text-[13.5px] font-medium text-white/90 hover:text-white px-2.5 sm:px-3.5 py-1 rounded-full hover:bg-white/15 transition-all whitespace-nowrap active:scale-95"
+              className="text-[13.5px] font-medium text-white/90 hover:text-white px-3.5 py-1 rounded-full hover:bg-white/15 transition-all whitespace-nowrap active:scale-95"
             >
               {link.label}
             </Link>
