@@ -14,12 +14,22 @@ import {
   CheckCircle,
   Phone,
   FileText,
-  ArrowRight,
   TrendingUp,
+  Inbox,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import AddPlotModal from "@/components/dashboard/AddPlotModal";
 import { useAuth } from "@/context/AuthContext";
-import { getPlots, getListings, getScans } from "@/lib/firestore";
+import {
+  getPlots,
+  getListings,
+  getScans,
+  getInquiries,
+  updateInquiryStatus,
+  createInquiry,
+  BuyerInquiry,
+} from "@/lib/firestore";
 
 export default function FarmerDashboardOverview() {
   const { user, profile } = useAuth();
@@ -27,64 +37,98 @@ export default function FarmerDashboardOverview() {
     "expected" | "ready"
   >("expected");
   const [isAddPlotOpen, setIsAddPlotOpen] = useState(false);
-  const [acceptedDeals, setAcceptedDeals] = useState<string[]>([]);
+  const [inquiries, setInquiries] = useState<BuyerInquiry[]>([]);
+  const [loadingInquiries, setLoadingInquiries] = useState(true);
   const [agreementModalItem, setAgreementModalItem] = useState<any>(null);
 
-  // Dynamic stats
-  const [totalLandHa, setTotalLandHa] = useState("3.5");
-  const [activePlotsCount, setActivePlotsCount] = useState(2);
-  const [harvestValueDisplay, setHarvestValueDisplay] = useState("₦2.4 M");
-  const [healthStatus, setHealthStatus] = useState("Good Condition");
+  // Dynamic real stats from Firestore
+  const [totalLandHa, setTotalLandHa] = useState("0.0");
+  const [activePlotsCount, setActivePlotsCount] = useState(0);
+  const [harvestValueDisplay, setHarvestValueDisplay] = useState("₦0");
+  const [healthStatus, setHealthStatus] = useState("No scans yet");
 
   useEffect(() => {
     async function loadStats() {
       if (!user) return;
       try {
+        // Real plots
         const plots = await getPlots(user.uid);
         if (plots && plots.length > 0) {
           const totalHa = plots.reduce((acc, p) => acc + (p.sizeHectares || 0), 0);
           setTotalLandHa(totalHa.toFixed(1));
           setActivePlotsCount(plots.length);
+        } else {
+          setTotalLandHa("0.0");
+          setActivePlotsCount(0);
         }
 
+        // Real listings
         const listings = await getListings(user.uid);
         if (listings && listings.length > 0) {
-          const totalVal = listings.reduce((acc, l) => acc + (l.volumeMudu * l.pricePerMudu || 0), 0);
+          const totalVal = listings.reduce(
+            (acc, l) => acc + (l.volumeMudu * l.pricePerMudu || 0),
+            0
+          );
           if (totalVal > 0) {
-            setHarvestValueDisplay(`₦${(totalVal / 1000000).toFixed(1)} M`);
+            setHarvestValueDisplay(`₦${(totalVal / 1000000).toFixed(2)} M`);
+          } else {
+            setHarvestValueDisplay("₦0");
           }
+        } else {
+          setHarvestValueDisplay("₦0");
         }
 
+        // Real scans
         const scans = await getScans(user.uid);
         if (scans && scans.length > 0) {
-          const latest = scans[0];
-          setHealthStatus(latest.condition);
+          setHealthStatus(scans[0].condition);
+        } else {
+          setHealthStatus("Healthy (No Issues)");
         }
+
+        // Real inquiries from buyers/offtakers
+        setLoadingInquiries(true);
+        const buyerInquiries = await getInquiries(user.uid);
+        setInquiries(buyerInquiries);
+        setLoadingInquiries(false);
       } catch (e) {
         console.warn("Could not load dashboard overview metrics:", e);
+        setLoadingInquiries(false);
       }
     }
     loadStats();
   }, [user]);
 
-  const handleAcceptDeal = (dealId: string) => {
-    setAcceptedDeals([...acceptedDeals, dealId]);
+  const handleAcceptDeal = async (inquiryId: string) => {
+    try {
+      await updateInquiryStatus(inquiryId, "accepted");
+      setInquiries((prev) =>
+        prev.map((inq) =>
+          inq.id === inquiryId ? { ...inq, status: "accepted" } : inq
+        )
+      );
+    } catch (e) {
+      console.error("Failed to accept deal:", e);
+    }
   };
 
   const farmerFirstName = profile?.fullName
     ? profile.fullName.trim().split(" ")[0]
-    : "Musa";
+    : "Farmer";
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Page Title Greeting matching PDF */}
+      {/* Page Title Greeting */}
       <div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Good morning, {farmerFirstName}!
+          Good day, {farmerFirstName}!
         </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Welcome to your farm management overview. All operational metrics below reflect live records.
+        </p>
       </div>
 
-      {/* 4 Metric Cards Grid matching PDF */}
+      {/* 4 Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Metric 1: Total Farm Land */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -111,7 +155,7 @@ export default function FarmerDashboardOverview() {
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-slate-500 mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-              Expected Harvest Value
+              Active Inventory Value
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Banknote className="w-4 h-4" />
@@ -123,7 +167,7 @@ export default function FarmerDashboardOverview() {
             </div>
             <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              Aggregated marketplace volume
+              Published marketplace listings
             </p>
           </div>
         </div>
@@ -144,7 +188,7 @@ export default function FarmerDashboardOverview() {
             </div>
             <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              No active pests reported
+              From AI Botanical Scanner
             </p>
           </div>
         </div>
@@ -161,21 +205,21 @@ export default function FarmerDashboardOverview() {
           </div>
           <div>
             <div className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-              3 Buyers
+              {inquiries.length} {inquiries.length === 1 ? "Inquiry" : "Inquiries"}
             </div>
             <p className="text-xs text-emerald-700 flex items-center gap-1 font-semibold">
               <span>→</span>
-              <span>₦420/kg top offer price</span>
+              <span>{inquiries.filter((i) => i.status === "pending").length} awaiting response</span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* 4 Quick Action Cards matching PDF */}
+      {/* 4 Quick Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Action 1: Check Plant Health (Solid Green) */}
+        {/* Action 1: Check Plant Health */}
         <Link
-          href="/#detect-diseases"
+          href="/dashboard/crop-scanner"
           className="bg-[#16a34a] hover:bg-[#15803d] text-white rounded-2xl p-6 flex items-center gap-4 shadow-md shadow-emerald-800/15 active:scale-95 transition-all group"
         >
           <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
@@ -186,7 +230,7 @@ export default function FarmerDashboardOverview() {
           </span>
         </Link>
 
-        {/* Action 2: Add New Farm Plot (Soft Mint) */}
+        {/* Action 2: Add New Farm Plot */}
         <button
           onClick={() => setIsAddPlotOpen(true)}
           className="bg-white hover:bg-emerald-50/60 border border-emerald-200/80 text-slate-900 rounded-2xl p-6 flex items-center gap-4 shadow-sm active:scale-95 transition-all group text-left"
@@ -199,9 +243,9 @@ export default function FarmerDashboardOverview() {
           </span>
         </button>
 
-        {/* Action 3: Sell Your Food (Soft Mint) */}
+        {/* Action 3: Sell Your Food / Marketplace */}
         <Link
-          href="/#marketplace"
+          href="/dashboard/marketplace"
           className="bg-white hover:bg-emerald-50/60 border border-emerald-200/80 text-slate-900 rounded-2xl p-6 flex items-center gap-4 shadow-sm active:scale-95 transition-all group"
         >
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-105 transition-transform">
@@ -212,9 +256,9 @@ export default function FarmerDashboardOverview() {
           </span>
         </Link>
 
-        {/* Action 4: Seasonal Insights (Soft Mint) */}
+        {/* Action 4: Seasonal Insights */}
         <Link
-          href="/dashboard/farm-details"
+          href="/dashboard/seasonal-insights"
           className="bg-white hover:bg-emerald-50/60 border border-emerald-200/80 text-slate-900 rounded-2xl p-6 flex items-center gap-4 shadow-sm active:scale-95 transition-all group"
         >
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-105 transition-transform">
@@ -226,13 +270,18 @@ export default function FarmerDashboardOverview() {
         </Link>
       </div>
 
-      {/* SECTION: Buyer Offers & Purchase Requests matching PDF */}
+      {/* SECTION: Buyer Offers & Purchase Requests */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
         {/* Header & Filter Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-            Buyer Offers & Purchase Requests
-          </h2>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+              Buyer Offers & Purchase Requests
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Inquiries submitted directly by verified off-takers and retailers.
+            </p>
+          </div>
 
           <div className="inline-flex p-1 bg-slate-100 rounded-xl">
             <button
@@ -243,7 +292,7 @@ export default function FarmerDashboardOverview() {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Expected Harvest (Field)
+              Active Inquiries ({inquiries.length})
             </button>
             <button
               onClick={() => setActiveInventoryTab("ready")}
@@ -253,118 +302,124 @@ export default function FarmerDashboardOverview() {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Ready Stock in Barn
+              Accepted Deals ({inquiries.filter((i) => i.status === "accepted").length})
             </button>
           </div>
         </div>
 
-        {/* Offers List */}
-        <div className="space-y-4">
-          {/* Offer 1: Grand Cereals Ltd */}
-          <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 bg-[#fafbfa] hover:border-emerald-200 flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                <CheckCircle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                    Grand Cereals Ltd (Jos South)
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                    Verified Buyer
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 font-medium">
-                  Wants:{" "}
-                  <span className="text-slate-900 font-bold">
-                    10 Metric Tons of Yellow Maize
-                  </span>{" "}
-                  @ <span className="text-emerald-700 font-bold">₦420 per kg</span>
-                </p>
-              </div>
+        {/* Real Inquiries List */}
+        {loadingInquiries ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            Loading buyer inquiries...
+          </div>
+        ) : inquiries.length === 0 ? (
+          <div className="py-12 px-4 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+              <Inbox className="w-6 h-6" />
             </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                onClick={() =>
-                  setAgreementModalItem({
-                    buyer: "Grand Cereals Ltd (Jos South)",
-                    terms:
-                      "10 Metric Tons Yellow Maize (Moisture grade <= 13%), Delivery window: Nov 28 - Dec 02, Escrow deposit: ₦4,200,000 via HashPay.",
-                  })
-                }
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100/70 transition-colors"
+            <h3 className="text-sm font-bold text-slate-800">
+              No active purchase requests yet
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Publish your crops to the LetsFarm Marketplace or add registered farm plots so regional off-takers and processors can send direct procurement requests.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/dashboard/marketplace"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold shadow-sm"
               >
-                View Agreement
-              </button>
-
-              {acceptedDeals.includes("deal-1") ? (
-                <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Deal Accepted</span>
-                </span>
-              ) : (
-                <button
-                  onClick={() => handleAcceptDeal("deal-1")}
-                  className="px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-95 text-white text-xs font-bold shadow-sm transition-all"
-                >
-                  Accept ₦4.2M Deal
-                </button>
-              )}
+                <Store className="w-3.5 h-3.5" />
+                <span>Go to Marketplace</span>
+              </Link>
             </div>
           </div>
+        ) : (
+          <div className="space-y-4">
+            {inquiries
+              .filter((inq) =>
+                activeInventoryTab === "ready" ? inq.status === "accepted" : true
+              )
+              .map((inquiry) => {
+                const totalDealValue = inquiry.volumeMudu * inquiry.offeredPrice;
 
-          {/* Offer 2: Rashida Food Hub */}
-          <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 bg-[#fafbfa] hover:border-emerald-200 flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                <Store className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                    Rashida Food Hub (Terminus Market)
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 uppercase tracking-wider">
-                    Retail Partner
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 font-medium">
-                  Wants:{" "}
-                  <span className="text-slate-900 font-bold">
-                    500kg Fresh Cassava Roots
-                  </span>{" "}
-                  @ <span className="text-emerald-700 font-bold">₦250 per kg</span>
-                </p>
-              </div>
-            </div>
+                return (
+                  <div
+                    key={inquiry.id}
+                    className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 bg-[#fafbfa] hover:border-emerald-200 flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                            {inquiry.buyerName}
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
+                            {inquiry.buyerType || "Verified Buyer"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-600 font-medium">
+                          Wants:{" "}
+                          <span className="text-slate-900 font-bold">
+                            {inquiry.volumeMudu} Mudu of {inquiry.crop}
+                          </span>{" "}
+                          @{" "}
+                          <span className="text-emerald-700 font-bold">
+                            ₦{inquiry.offeredPrice.toLocaleString()} per Mudu
+                          </span>
+                        </p>
+                        {inquiry.message && (
+                          <p className="text-xs text-slate-500 italic">
+                            &ldquo;{inquiry.message}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <a
-                href="tel:09158900701"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100/70 transition-colors"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span>Call Buyer</span>
-              </a>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        onClick={() =>
+                          setAgreementModalItem({
+                            buyer: inquiry.buyerName,
+                            terms: `${inquiry.volumeMudu} Mudu of ${inquiry.crop} @ ₦${inquiry.offeredPrice.toLocaleString()}/Mudu. Total value: ₦${totalDealValue.toLocaleString()}. Plateau Quality Extension Verified.`,
+                          })
+                        }
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100/70 transition-colors"
+                      >
+                        View Agreement
+                      </button>
 
-              {acceptedDeals.includes("deal-2") ? (
-                <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Sale Confirmed</span>
-                </span>
-              ) : (
-                <button
-                  onClick={() => handleAcceptDeal("deal-2")}
-                  className="px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-95 text-white text-xs font-bold shadow-sm transition-all"
-                >
-                  Confirm Sale
-                </button>
-              )}
-            </div>
+                      {inquiry.buyerPhone && (
+                        <a
+                          href={`tel:${inquiry.buyerPhone}`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100/70 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Call</span>
+                        </a>
+                      )}
+
+                      {inquiry.status === "accepted" ? (
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Deal Accepted</span>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleAcceptDeal(inquiry.id)}
+                          className="px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-95 text-white text-xs font-bold shadow-sm transition-all"
+                        >
+                          Accept ₦{(totalDealValue / 1000).toFixed(0)}k Deal
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Add New Plot Modal */}
@@ -381,12 +436,12 @@ export default function FarmerDashboardOverview() {
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-emerald-600" />
                 <h4 className="font-bold text-slate-900">
-                  Pre-Harvest Off-Take Agreement
+                  Direct Farm Procurement Agreement
                 </h4>
               </div>
               <button
                 onClick={() => setAgreementModalItem(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
               >
                 ✕
               </button>
@@ -399,8 +454,7 @@ export default function FarmerDashboardOverview() {
                 <strong>Specifications:</strong> {agreementModalItem.terms}
               </p>
               <p>
-                <strong>Quality Assurance:</strong> Verified by Plateau State
-                Extension Cluster Agent.
+                <strong>Quality Assurance:</strong> Verified by Plateau State Extension Cluster Agent.
               </p>
             </div>
             <button

@@ -82,10 +82,10 @@ export default function FarmerSettingsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Title matching PDF */}
+      {/* Title matching account type */}
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-          Farmer Profile & Account Settings
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight capitalize">
+          {profile?.accountType || "Account"} Profile &amp; Settings
         </h1>
         <p className="text-xs text-slate-500 mt-1">
           Connected to Cloud Firestore • Updates are instantly reflected across your dashboard

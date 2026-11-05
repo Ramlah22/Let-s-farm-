@@ -87,8 +87,10 @@ function SignupContent() {
       setTimeout(() => {
         if (accountType === "farmer") {
           router.push("/dashboard");
+        } else if (accountType === "off-taker") {
+          router.push("/dashboard/offtaker");
         } else {
-          router.push("/");
+          router.push("/dashboard/consumer");
         }
       }, 1500);
     } else {

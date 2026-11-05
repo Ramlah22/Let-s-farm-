@@ -41,8 +41,8 @@ interface AuthContextType {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
-  registerWithEmail: (data: RegisterPayload) => Promise<{ success: boolean; error?: string }>;
-  loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  registerWithEmail: (data: RegisterPayload) => Promise<{ success: boolean; error?: string; profile?: UserProfile }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string; profile?: UserProfile }>;
   logout: () => Promise<void>;
 }
 
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(userProfile);
       localStorage.setItem("letsfarm_user_profile", JSON.stringify(userProfile));
       setLoading(false);
-      return { success: true };
+      return { success: true, profile: userProfile };
     } catch (error: any) {
       setLoading(false);
       return { success: false, error: error.message || "Failed to register account" };
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(userProfile);
       localStorage.setItem("letsfarm_user_profile", JSON.stringify(userProfile));
       setLoading(false);
-      return { success: true };
+      return { success: true, profile: userProfile };
     } catch (error: any) {
       setLoading(false);
       return { success: false, error: error.message || "Failed to log in" };
