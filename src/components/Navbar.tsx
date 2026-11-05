@@ -20,6 +20,18 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   const dashboardHref =
     profile?.accountType === "off-taker"
       ? "/dashboard/offtaker"
@@ -37,8 +49,17 @@ export default function Navbar() {
 
   return (
     <>
+      {/* ── FULL-SCREEN BLUR BACKDROP FOR MOBILE MENU ── */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/65 backdrop-blur-md z-40 transition-all duration-300 sm:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── 1. TOP HEADER (Stays on Hero - scrolls away with hero) ── */}
-      <header className="absolute top-0 left-0 right-0 z-40 w-full pt-5 sm:pt-6 px-5 sm:px-10">
+      <header className="absolute top-0 left-0 right-0 z-50 w-full pt-5 sm:pt-6 px-5 sm:px-10">
         <div className="max-w-[1240px] mx-auto flex items-center justify-between h-12">
           {/* Left: Brand Logo & Wordmark */}
           <Link href="/" className="flex items-center gap-3 group">
@@ -99,7 +120,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-white p-2 rounded-full focus:outline-none bg-white/10 backdrop-blur-md border border-white/20"
+              className="text-white p-2.5 rounded-full focus:outline-none bg-white/10 backdrop-blur-md border border-white/20 active:scale-95 transition-transform"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? (
@@ -111,41 +132,68 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile slide-down menu */}
+        {/* Mobile slide-down menu card (floats above blurred backdrop) */}
         {mobileMenuOpen && (
-          <div className="sm:hidden mx-auto mt-3 rounded-2xl bg-[#0c2415]/95 backdrop-blur-2xl border border-white/20 px-6 py-6 space-y-4 shadow-2xl animate-fadeIn">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
+          <div className="sm:hidden relative z-50 mx-auto mt-3 rounded-3xl bg-[#0b2915]/95 backdrop-blur-2xl border border-white/25 px-6 py-6 space-y-4 shadow-2xl animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Navigation
+              </span>
+              <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-medium text-white/90 hover:text-white py-1"
+                className="text-white/70 hover:text-white text-xs font-medium"
               >
-                {link.label}
-              </Link>
-            ))}
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-xl transition-all"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
             <div className="pt-3 border-t border-white/10 flex flex-col gap-2.5">
               {profile ? (
-                <Link
-                  href={dashboardHref}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-xs font-semibold bg-white text-slate-950 rounded-full"
-                >
-                  Go to Dashboard →
-                </Link>
+                <div className="space-y-2">
+                  <Link
+                    href={dashboardHref}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 text-xs font-semibold bg-white text-slate-950 rounded-full flex items-center justify-center gap-1.5"
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-center py-2 text-xs font-medium text-red-300 hover:text-red-200"
+                  >
+                    Log Out
+                  </button>
+                </div>
               ) : (
                 <>
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 text-xs font-medium text-white/90 border border-white/20 rounded-full"
+                    className="w-full text-center py-2.5 text-xs font-medium text-white/90 border border-white/20 rounded-full hover:bg-white/10 transition-colors"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/signup"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 text-xs font-semibold bg-white text-slate-950 rounded-full"
+                    className="w-full text-center py-2.5 text-xs font-semibold bg-white text-slate-950 rounded-full shadow-md active:scale-95 transition-transform"
                   >
                     Get Started
                   </Link>
@@ -159,7 +207,7 @@ export default function Navbar() {
       {/* ── 2. FLOATING GLASS PILL NAVBAR (hidden on mobile) ── */}
       <nav
         aria-label="Main Navigation"
-        className="hidden sm:block fixed top-5 sm:top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto transition-all duration-300"
+        className="hidden sm:block fixed top-5 sm:top-6 left-1/2 -translate-x-1/2 z-40 pointer-events-auto transition-all duration-300"
       >
         <div
           className={`flex items-center gap-2 px-6 py-2.5 rounded-full border shadow-2xl transition-all duration-300 ${

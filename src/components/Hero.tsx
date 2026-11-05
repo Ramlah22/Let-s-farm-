@@ -42,7 +42,7 @@ export default function Hero({ onScanCropsClick }: HeroProps) {
         </div>
 
         {/* ── SPACER FOR TOP NAVBAR (pt-28 to pt-36) ── */}
-        <div className="h-28 sm:h-32 shrink-0" />
+        <div className="h-28 sm:h-28 shrink-0" />
 
         {/* ── CENTERED HERO STACK ── */}
         <div className="relative z-10 max-w-4xl mx-auto px-5 sm:px-8 text-center my-auto flex flex-col items-center space-y-6 sm:space-y-7">

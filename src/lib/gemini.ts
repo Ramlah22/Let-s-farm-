@@ -83,6 +83,150 @@ export async function callGemini(
 }
 
 /**
+ * Call Gemini Multimodal with an image attachment
+ */
+export async function callGeminiMultimodal(
+  prompt: string,
+  imageBase64: string,
+  systemInstruction?: string
+): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not configured");
+  }
+
+  let rawBase64 = imageBase64;
+  let mimeType = "image/jpeg";
+  if (imageBase64.startsWith("data:")) {
+    const match = imageBase64.match(/^data:([^;]+);base64,(.*)$/);
+    if (match) {
+      mimeType = match[1];
+      rawBase64 = match[2];
+    }
+  }
+
+  const models = [
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.7-flash",
+    "gemini-2.5-flash",
+  ];
+
+  let lastErrorMsg = "";
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+      const bodyPayload: any = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: rawBase64,
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      if (systemInstruction) {
+        bodyPayload.systemInstruction = {
+          parts: [{ text: systemInstruction }],
+        };
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bodyPayload),
+      });
+
+      const data: GeminiResponse = await res.json();
+
+      if (data.error) {
+        lastErrorMsg = data.error.message;
+        console.warn(`Gemini multimodal ${model} error (${data.error.code}):`, data.error.message);
+        continue;
+      }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim().length > 0) {
+        return text.trim();
+      }
+    } catch (err: any) {
+      lastErrorMsg = err.message;
+      console.warn(`Error calling Gemini multimodal with ${model}:`, err.message);
+    }
+  }
+
+  throw new Error(`All Gemini multimodal models failed. Last error: ${lastErrorMsg}`);
+}
+
+/**
+ * Direct Gemini Vision Plant Diagnosis Engine
+ */
+export async function analyzePlantImageWithGemini(
+  imageBase64: string,
+  cropHint?: string
+): Promise<{
+  isHealthy: boolean;
+  cropName: string;
+  condition: string;
+  scientificName?: string;
+  confidence: number;
+  stage: "Seedlings" | "Saplings" | "Mature" | "Ripe / Harvest";
+  description: string;
+  treatmentSteps: string[];
+}> {
+  const prompt = `
+You are an expert plant pathologist and Nigerian agricultural extension specialist.
+Analyze this crop leaf / plant photograph in detail. Suspected crop or context: ${cropHint || "Field Crop in Nigeria"}.
+
+Determine:
+1. Exact crop name.
+2. Is the plant healthy or diseased/pest-infested?
+3. Condition name (e.g. "Healthy Crop", "Early Blight", "Late Blight", "Fall Armyworm", "Bacterial Wilt", "Cercospora Leaf Spot", "Aphid Damage", "Nitrogen Deficiency").
+4. Scientific name of pathogen/pest if applicable.
+5. Confidence percentage (number between 75 and 99).
+6. Growth stage: strictly one of "Seedlings", "Saplings", "Mature", "Ripe / Harvest".
+7. Description of symptoms or healthy leaf characteristics observed in this image.
+8. 3-4 practical treatment or maintenance steps tailored for Nigerian farmers (mentioning accessible local organic methods like neem seed oil/wood ash, and NAFDAC registered inputs like Mancozeb/Ridomil Gold if diseased; or optimal harvest/watering advice if healthy).
+
+Return a strictly valid JSON object matching this schema with NO markdown code blocks or backticks:
+{
+  "isHealthy": true,
+  "cropName": "Crop Name",
+  "condition": "Condition / Disease Name",
+  "scientificName": "Scientific name or N/A",
+  "confidence": 92,
+  "stage": "Saplings",
+  "description": "Observed symptoms or foliage status...",
+  "treatmentSteps": ["Step 1", "Step 2", "Step 3"]
+}
+`;
+
+  const raw = await callGeminiMultimodal(
+    prompt,
+    imageBase64,
+    "You are a plant pathologist and Nigerian agricultural extension specialist. Output strictly raw JSON only."
+  );
+
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+  const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+  return JSON.parse(cleaned);
+}
+
+/**
  * Generate practical, localized Nigerian treatment advice for crop diseases
  */
 export async function generateDiseaseTreatment(
