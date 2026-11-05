@@ -38,7 +38,7 @@ export default function ValueProposition() {
   return (
     <section
       id="solutions"
-      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f7faf8] via-[#edf5f0] to-[#f5f9f6]"
+      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f7faf8] via-[#edf5f0] to-[#f5f9f6] scroll-mt-20"
     >
       {/* Background Ambient Glow & Geometric Lattice */}
       <div className="absolute inset-0 pointer-events-none">

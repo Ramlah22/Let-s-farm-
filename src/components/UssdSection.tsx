@@ -14,7 +14,7 @@ export default function UssdSection() {
   return (
     <section
       id="reach"
-      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f5f9f6] via-[#e8f2ec] to-[#f4f8f6] border-t border-slate-200/70"
+      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f5f9f6] via-[#e8f2ec] to-[#f4f8f6] border-t border-slate-200/70 scroll-mt-20"
     >
       {/* Background Soft Glows & Precision Grid */}
       <div className="absolute inset-0 pointer-events-none">

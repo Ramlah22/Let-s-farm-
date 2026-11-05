@@ -9,7 +9,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 export type AccountType = "farmer" | "consumer" | "off-taker";
 
@@ -42,7 +42,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   registerWithEmail: (data: RegisterPayload) => Promise<{ success: boolean; error?: string; profile?: UserProfile }>;
-  loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string; profile?: UserProfile }>;
+  loginWithEmail: (email: string, password: string, selectedAccountType?: AccountType) => Promise<{ success: boolean; error?: string; profile?: UserProfile }>;
   logout: () => Promise<void>;
 }
 
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithEmail = async (email: string, password: string) => {
+  const loginWithEmail = async (email: string, password: string, selectedAccountType?: AccountType) => {
     try {
       setLoading(true);
 
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         uid = userCred.user.uid;
 
-        // Fetch from Firestore
+        // 1. First attempt: fetch from Firestore by auth UID
         const docRef = doc(db, "users", uid);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
@@ -183,10 +183,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { success: false, error: "Incorrect password. Please try again." };
         }
 
-        // Fallback check in Firestore by email-derived ID
         uid = `user_${email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      }
+
+      // 2. Second attempt: search Firestore users by email query if not found yet
+      if (!userProfile) {
         try {
-          const docRef = doc(db, "users", uid);
+          const q = query(collection(db, "users"), where("email", "==", email));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            userProfile = snap.docs[0].data() as UserProfile;
+          }
+        } catch (e) {
+          console.warn("Email query notice:", e);
+        }
+      }
+
+      // 3. Third attempt: check Firestore by email-derived ID
+      if (!userProfile) {
+        try {
+          const fallbackUid = `user_${email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+          const docRef = doc(db, "users", fallbackUid);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             userProfile = snap.data() as UserProfile;
@@ -196,17 +213,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // If user profile found in Firestore and user explicitly chose a specific account type on login form,
+      // allow honoring the selected account type if provided
+      const resolvedRole: AccountType = userProfile?.accountType || selectedAccountType || "farmer";
+
       if (!userProfile) {
         userProfile = {
           uid: uid || `user_${email.replace(/[^a-zA-Z0-9]/g, "_")}`,
-          accountType: "farmer",
-          fullName: "Verified Member",
+          accountType: resolvedRole,
+          fullName: resolvedRole === "off-taker" ? undefined : "Verified Member",
+          companyName: resolvedRole === "off-taker" ? "Commercial Buyer Ltd" : undefined,
           email: email,
           phone: "08012345678",
           location: "Jos South, Plateau State",
           createdAt: new Date().toISOString(),
           verified: true,
         };
+
+        // Save to Firestore so it is permanently remembered
+        try {
+          await setDoc(doc(db, "users", userProfile.uid), userProfile, { merge: true });
+        } catch (e) {
+          console.warn("Firestore save fallback notice:", e);
+        }
+      } else if (selectedAccountType && userProfile.accountType !== selectedAccountType) {
+        // If user explicitly picked an account type on the login screen, honor their choice
+        userProfile.accountType = selectedAccountType;
+        try {
+          await setDoc(doc(db, "users", userProfile.uid), { accountType: selectedAccountType }, { merge: true });
+        } catch (e) {
+          // ignore
+        }
       }
 
       setProfile(userProfile);

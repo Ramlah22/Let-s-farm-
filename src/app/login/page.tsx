@@ -43,21 +43,21 @@ function LoginContent() {
     }
 
     setSubmitting(true);
-    const res = await loginWithEmail(email, password);
+    const res = await loginWithEmail(email, password, accountType);
     setSubmitting(false);
 
     if (res.success) {
       setIsSuccess(true);
-      const role = res.profile?.accountType || accountType;
+      const targetRole = res.profile?.accountType || accountType;
       setTimeout(() => {
-        if (role === "farmer") {
-          router.push("/dashboard");
-        } else if (role === "off-taker") {
+        if (targetRole === "off-taker") {
           router.push("/dashboard/offtaker");
-        } else {
+        } else if (targetRole === "consumer") {
           router.push("/dashboard/consumer");
+        } else {
+          router.push("/dashboard");
         }
-      }, 1000);
+      }, 900);
     } else {
       setErrorMsg(res.error || "Failed to log in. Please check your credentials.");
     }
