@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Scan, ShieldCheck, Zap, AlertTriangle, RefreshCw } from "lucide-react";
+import { Scan, ShieldCheck, Zap, AlertTriangle, RefreshCw, CheckCircle2 } from "lucide-react";
 
 export default function DiseaseDetection() {
   const [isScanning, setIsScanning] = useState(false);
@@ -18,18 +18,34 @@ export default function DiseaseDetection() {
   };
 
   return (
-    <section id="detect-diseases" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section
+      id="detect-diseases"
+      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-br from-[#03180e] via-[#072b1a] to-[#01140b] text-white"
+    >
+      {/* Background Ambient Glows & Grid */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 -right-24 w-96 h-96 rounded-full bg-emerald-500/10 blur-[130px]" />
+        <div className="absolute -bottom-24 -left-24 w-[32rem] h-[32rem] rounded-full bg-teal-500/10 blur-[140px]" />
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #4ade80 1px, transparent 0)`,
+            backgroundSize: "32px 32px",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left Column: Phone Frame with Live Scan */}
           <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-[340px] aspect-[9/16] bg-slate-900 rounded-[2.5rem] p-3 shadow-2xl ring-1 ring-slate-800 shadow-emerald-950/20">
+            <div className="relative w-full max-w-[340px] aspect-[9/16] bg-slate-950 rounded-[2.8rem] p-3 shadow-2xl ring-1 ring-emerald-500/30 shadow-emerald-950/50">
               {/* Phone Notch/Speaker */}
-              <div className="absolute top-5 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-950 rounded-full z-30" />
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-900 rounded-full z-30" />
 
               {/* Viewport Screen */}
-              <div className="relative w-full h-full rounded-[2rem] overflow-hidden bg-emerald-950 border border-slate-700/50 flex flex-col justify-between">
-                {/* Real Crop Plant Image */}
+              <div className="relative w-full h-full rounded-[2.2rem] overflow-hidden bg-emerald-950 border border-emerald-900/40 flex flex-col justify-between">
+                {/* Crop Plant Background */}
                 <div className="absolute inset-0 z-0">
                   <Image
                     src="/hero-farm.jpg"
@@ -37,13 +53,12 @@ export default function DiseaseDetection() {
                     fill
                     className="object-cover scale-150 brightness-95 contrast-105"
                   />
-                  {/* Subtle camera view green tint */}
-                  <div className="absolute inset-0 bg-emerald-950/20 backdrop-brightness-95" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-emerald-950/20 to-slate-950/40" />
                 </div>
 
                 {/* Top Overlay: LIVE SCAN Indicator */}
                 <div className="relative z-20 pt-8 px-4 flex items-center justify-between">
-                  <div className="inline-flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                  <div className="inline-flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-[11px] font-bold text-white tracking-widest uppercase">
                       LIVE SCAN
@@ -53,7 +68,7 @@ export default function DiseaseDetection() {
                   <button
                     onClick={triggerScan}
                     title="Rescan"
-                    className="bg-black/60 backdrop-blur-md p-1.5 rounded-full border border-white/20 text-white hover:text-emerald-300 transition-colors"
+                    className="bg-black/70 backdrop-blur-md p-1.5 rounded-full border border-white/20 text-white hover:text-emerald-300 transition-colors"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? "animate-spin" : ""}`} />
                   </button>
@@ -63,23 +78,21 @@ export default function DiseaseDetection() {
                 <div className="relative z-20 mx-auto w-48 h-48 my-auto">
                   {/* Animated laser line during scanning */}
                   {isScanning && (
-                    <div className="absolute inset-x-0 h-0.5 bg-red-400 shadow-[0_0_8px_#ef4444] animate-bounce z-30" />
+                    <div className="absolute inset-x-0 h-0.5 bg-red-400 shadow-[0_0_10px_#ef4444] animate-bounce z-30" />
                   )}
 
-                  {/* Target Bounding Box matching PDF */}
-                  <div className="relative w-full h-full border-2 border-red-500/90 rounded-xl bg-red-500/10 backdrop-blur-[1px] transition-all duration-300">
+                  {/* Target Bounding Box */}
+                  <div className="relative w-full h-full border-2 border-red-500/90 rounded-2xl bg-red-500/10 backdrop-blur-[1px] transition-all duration-300">
                     {/* Bounding Box Corner Accents */}
-                    <span className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-red-500" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-red-500" />
-                    <span className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-red-500" />
-                    <span className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-red-500" />
+                    <span className="absolute -top-1 -left-1 w-3.5 h-3.5 border-t-2 border-l-2 border-red-500" />
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 border-t-2 border-r-2 border-red-500" />
+                    <span className="absolute -bottom-1 -left-1 w-3.5 h-3.5 border-b-2 border-l-2 border-red-500" />
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-b-2 border-r-2 border-red-500" />
 
                     {/* Red Pill: PEST DETECTED */}
                     <div className="absolute -top-3.5 right-3 bg-red-600 text-white font-bold text-[10px] tracking-wider uppercase px-2.5 py-0.5 rounded shadow-md flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
-                      <span>
-                        {isScanning ? "ANALYZING..." : "PEST DETECTED"}
-                      </span>
+                      <span>{isScanning ? "ANALYZING..." : "PEST DETECTED"}</span>
                     </div>
 
                     {/* AI Reticle in center */}
@@ -91,10 +104,10 @@ export default function DiseaseDetection() {
 
                 {/* Bottom Diagnostic Preview Bar */}
                 <div className="relative z-20 p-4 pb-6">
-                  <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-xl p-3 text-white">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-emerald-400">FAW Caterpillars</span>
-                      <span className="text-slate-300 font-mono">98.4% Match</span>
+                  <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 text-white shadow-xl">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-bold text-emerald-400">FAW Caterpillars</span>
+                      <span className="text-slate-300 font-mono text-[11px]">98.4% Match</span>
                     </div>
                     <p className="text-[11px] text-slate-300 leading-snug">
                       NAFDAC Remedy: Neem Extract + Emamectin Benzoate 5% SG
@@ -108,28 +121,34 @@ export default function DiseaseDetection() {
           {/* Right Column: Title + Descriptions + Feature Cards */}
           <div className="lg:col-span-7 space-y-8">
             <div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.2] mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-xs font-bold text-emerald-300 uppercase tracking-wider mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>AI Foliar Diagnostics</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.18] mb-4">
                 Detect Diseases and Improve <br className="hidden sm:inline" />
                 Farm Health Early
               </h2>
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl">
+
+              <p className="text-base sm:text-lg text-emerald-100/80 leading-relaxed max-w-2xl">
                 Diagnose foliar blight, armyworm attacks, and micronutrient
                 deficiencies in seconds.
               </p>
             </div>
 
-            {/* 2 Feature Callouts matching the PDF */}
-            <div className="space-y-6 pt-2">
+            {/* 2 Feature Callouts */}
+            <div className="space-y-5 pt-2">
               {/* Feature 1: Quick Diagnostic */}
-              <div className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shrink-0">
+              <div className="group flex items-start gap-5 p-6 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 hover:border-emerald-400/40 hover:bg-white/[0.09] transition-all duration-300 shadow-lg">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <Zap className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1.5">
+                  <h3 className="text-lg font-bold text-white mb-1.5 group-hover:text-emerald-300 transition-colors">
                     Quick Diagnostic
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-emerald-100/70 leading-relaxed">
                     Through our crop scanning technology, you can easily scan crops and
                     gain results in a short period of time.
                   </p>
@@ -137,15 +156,15 @@ export default function DiseaseDetection() {
               </div>
 
               {/* Feature 2: Localized Remedies */}
-              <div className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shrink-0">
+              <div className="group flex items-start gap-5 p-6 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 hover:border-emerald-400/40 hover:bg-white/[0.09] transition-all duration-300 shadow-lg">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1.5">
+                  <h3 className="text-lg font-bold text-white mb-1.5 group-hover:text-emerald-300 transition-colors">
                     Localized Remedies
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-emerald-100/70 leading-relaxed">
                     Prescriptions match locally accessible bio-treatments and
                     certified NAFDAC registered solutions.
                   </p>

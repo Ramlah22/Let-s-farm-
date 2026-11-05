@@ -85,8 +85,12 @@ function SignupContent() {
     if (res.success) {
       setIsSuccess(true);
       setTimeout(() => {
-        router.push("/");
-      }, 1800);
+        if (accountType === "farmer") {
+          router.push("/dashboard");
+        } else {
+          router.push("/");
+        }
+      }, 1500);
     } else {
       setErrorMsg(res.error || "Failed to create account. Please try again.");
     }

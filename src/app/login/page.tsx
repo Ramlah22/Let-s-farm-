@@ -49,8 +49,12 @@ function LoginContent() {
     if (res.success) {
       setIsSuccess(true);
       setTimeout(() => {
-        router.push("/");
-      }, 1500);
+        if (accountType === "farmer") {
+          router.push("/dashboard");
+        } else {
+          router.push("/");
+        }
+      }, 1200);
     } else {
       setErrorMsg(res.error || "Failed to log in. Please check your credentials.");
     }
