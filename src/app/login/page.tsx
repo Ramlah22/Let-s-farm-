@@ -48,13 +48,16 @@ function LoginContent() {
 
     if (res.success) {
       setIsSuccess(true);
+      const role = res.profile?.accountType || accountType;
       setTimeout(() => {
-        if (accountType === "farmer") {
+        if (role === "farmer") {
           router.push("/dashboard");
+        } else if (role === "off-taker") {
+          router.push("/dashboard/offtaker");
         } else {
-          router.push("/");
+          router.push("/dashboard/consumer");
         }
-      }, 1200);
+      }, 1000);
     } else {
       setErrorMsg(res.error || "Failed to log in. Please check your credentials.");
     }

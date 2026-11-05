@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Share2,
@@ -16,25 +16,67 @@ import {
   Droplets,
   AlertTriangle,
   Sparkles,
+  Inbox,
+  Trash2,
 } from "lucide-react";
 import AddPlotModal from "@/components/dashboard/AddPlotModal";
 import EditFarmDetailsModal from "@/components/dashboard/EditFarmDetailsModal";
 import ShareProfileModal from "@/components/dashboard/ShareProfileModal";
+import { useAuth } from "@/context/AuthContext";
+import { getPlots, deletePlot, Plot } from "@/lib/firestore";
 
 export default function FarmDetailsPage() {
+  const { user, profile } = useAuth();
   const [isAddPlotOpen, setIsAddPlotOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [selectedPlot, setSelectedPlot] = useState<"all" | "A" | "B">("all");
+
+  const [plots, setPlots] = useState<Plot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPlotId, setSelectedPlotId] = useState<string | "all">("all");
+
+  const loadFarmPlots = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const userPlots = await getPlots(user.uid);
+      setPlots(userPlots);
+      setLoading(false);
+    } catch (err) {
+      console.warn("Error fetching plots:", err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFarmPlots();
+  }, [user]);
+
+  const handleDeletePlot = async (id: string) => {
+    if (confirm("Are you sure you want to delete this plot registration?")) {
+      await deletePlot(id);
+      loadFarmPlots();
+    }
+  };
+
+  const totalRegisteredArea = plots.reduce(
+    (acc, p) => acc + (p.sizeHectares || 0),
+    0
+  );
+
+  const farmLocation = profile?.location || "Kwang, Jos South, Plateau State";
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Top Header & Action Buttons matching Screenshot 3 */}
+      {/* Top Header & Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Farm Details
+            Farm Details &amp; Asset Registry
           </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Registered land parcels, GPS mapping, and agricultural asset inventory.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -53,7 +95,7 @@ export default function FarmDetailsPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-sm transition-all"
           >
             <Edit3 className="w-4 h-4 text-slate-500" />
-            <span>Edit Details</span>
+            <span>Edit Farm</span>
           </button>
 
           {/* + Add New Plot */}
@@ -67,7 +109,7 @@ export default function FarmDetailsPage() {
         </div>
       </div>
 
-      {/* Top Parcels Metrics Strip matching Screenshot 3 */}
+      {/* Top Parcels Metrics Strip */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Total Registered Area */}
         <div className="md:col-span-4 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
@@ -80,91 +122,85 @@ export default function FarmDetailsPage() {
                 Total Registered Area
               </div>
               <div className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                3.5 <span className="text-base font-semibold text-slate-500">Ha</span>
+                {totalRegisteredArea.toFixed(1)}{" "}
+                <span className="text-base font-semibold text-slate-500">Ha</span>
               </div>
             </div>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-            2 Active Plots
+            {plots.length} Active {plots.length === 1 ? "Plot" : "Plots"}
           </span>
         </div>
 
-        {/* North Plot A Strip */}
-        <div
-          onClick={() => setSelectedPlot("A")}
-          className={`md:col-span-4 bg-white rounded-2xl p-5 border shadow-sm flex items-center justify-between cursor-pointer transition-all ${
-            selectedPlot === "A"
-              ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20"
-              : "border-slate-200/80 hover:border-slate-300"
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>North Plot A</span>
-              <span className="text-xs font-semibold text-slate-400">• 2.0 Ha</span>
+        {/* Real Registered Parcels Preview */}
+        {loading ? (
+          <div className="md:col-span-8 bg-white rounded-2xl p-5 border border-slate-200/80 text-center text-xs text-slate-400 flex items-center justify-center">
+            Loading registered plots...
+          </div>
+        ) : plots.length === 0 ? (
+          <div className="md:col-span-8 bg-white rounded-2xl p-5 border border-dashed border-slate-200 flex items-center justify-between">
+            <div className="text-xs text-slate-500">
+              No farm plots registered yet. Click <strong>&ldquo;Add New Plot&rdquo;</strong> to register your field parcels.
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Crop on Field:{" "}
-              <span className="font-semibold text-slate-800">Yellow Maize</span>
-            </p>
+            <button
+              onClick={() => setIsAddPlotOpen(true)}
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 underline"
+            >
+              Register First Plot →
+            </button>
           </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <Eye className="w-4 h-4 hover:text-emerald-700" />
-            <Edit3
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditOpen(true);
-              }}
-              className="w-4 h-4 hover:text-emerald-700"
-            />
-          </div>
-        </div>
-
-        {/* South Plot B Strip */}
-        <div
-          onClick={() => setSelectedPlot("B")}
-          className={`md:col-span-4 bg-white rounded-2xl p-5 border shadow-sm flex items-center justify-between cursor-pointer transition-all ${
-            selectedPlot === "B"
-              ? "border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20"
-              : "border-slate-200/80 hover:border-slate-300"
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span>South Plot B</span>
-              <span className="text-xs font-semibold text-slate-400">• 1.5 Ha</span>
+        ) : (
+          plots.slice(0, 2).map((plot) => (
+            <div
+              key={plot.id}
+              onClick={() => setSelectedPlotId(plot.id)}
+              className={`md:col-span-4 bg-white rounded-2xl p-5 border shadow-sm flex items-center justify-between cursor-pointer transition-all ${
+                selectedPlotId === plot.id
+                  ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20"
+                  : "border-slate-200/80 hover:border-slate-300"
+              }`}
+            >
+              <div>
+                <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="truncate max-w-[140px]">{plot.name}</span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    • {plot.sizeHectares} Ha
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 truncate max-w-[200px]">
+                  Crops:{" "}
+                  <span className="font-semibold text-slate-800">
+                    {plot.crops?.join(", ") || "General Crop"}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeletePlot(plot.id);
+                }}
+                title="Delete plot"
+                className="text-slate-400 hover:text-red-600 p-1 rounded-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Crop on Field:{" "}
-              <span className="font-semibold text-slate-800">Cassava</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <Eye className="w-4 h-4 hover:text-amber-700" />
-            <Edit3
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditOpen(true);
-              }}
-              className="w-4 h-4 hover:text-amber-700"
-            />
-          </div>
-        </div>
+          ))
+        )}
       </div>
 
-      {/* Cadastral GIS Satellite Map Card matching Screenshot 3 */}
+      {/* Cadastral GIS Satellite Map Card */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
         {/* Sub-header with Location & Google Maps Link */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base">
             <MapPin className="w-5 h-5 text-emerald-600" />
-            <span>Kwang, Jos South, Plateau</span>
+            <span>{farmLocation}</span>
           </div>
 
           <a
-            href="https://maps.google.com/?q=9.8052,8.8921"
+            href={`https://maps.google.com/?q=${encodeURIComponent(farmLocation)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 transition-colors"
@@ -188,150 +224,131 @@ export default function FarmDetailsPage() {
             <div className="absolute inset-0 bg-[radial-gradient(#ffffff_0.8px,transparent_0.8px)] [background-size:20px_20px] opacity-20 pointer-events-none" />
           </div>
 
-          {/* Regional Labels matching PDF */}
+          {/* Regional Labels */}
           <div className="absolute top-8 left-8 text-white/80 font-mono text-[11px] drop-shadow flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Kugiya Market Axis</span>
+            <span>Plateau Agricultural Node</span>
           </div>
           <div className="absolute top-16 left-1/3 text-white/70 font-mono text-[11px] drop-shadow">
-            Bukuru Expressway
+            Jos South Aggregation Axis
           </div>
           <div className="absolute bottom-8 right-16 text-white/70 font-mono text-[11px] drop-shadow">
-            Rayfield Agro Corridor
+            Kuru - Vom Agricultural Corridor
           </div>
 
-          {/* Plot A Cadastral Polygon Overlay */}
-          <div
-            onClick={() => setSelectedPlot("A")}
-            className={`absolute top-16 right-1/4 w-44 h-40 border-2 rounded-2xl cursor-pointer transition-all flex flex-col items-center justify-center p-3 text-center ${
-              selectedPlot === "A" || selectedPlot === "all"
-                ? "border-emerald-400 bg-emerald-600/35 backdrop-blur-[1px] shadow-lg shadow-emerald-950/40"
-                : "border-emerald-400/50 bg-emerald-600/15"
-            }`}
-          >
-            <span className="text-xs font-bold text-white drop-shadow">
-              Maize Plot (Plot A)
-            </span>
-            <span className="text-[10px] font-mono text-emerald-200 mt-0.5">
-              2.0 Hectares
-            </span>
-          </div>
+          {/* Render Real Registered Plot Boundaries */}
+          {plots.map((p, idx) => {
+            const topPositions = [16, 44, 28, 52];
+            const rightPositions = ["25%", "15%", "40%", "30%"];
+            const top = topPositions[idx % topPositions.length];
+            const right = rightPositions[idx % rightPositions.length];
 
-          {/* Plot B Cadastral Polygon Overlay */}
-          <div
-            onClick={() => setSelectedPlot("B")}
-            className={`absolute top-44 right-1/6 w-48 h-44 border-2 rounded-2xl cursor-pointer transition-all flex flex-col items-center justify-center p-3 text-center ${
-              selectedPlot === "B" || selectedPlot === "all"
-                ? "border-amber-400 bg-amber-500/35 backdrop-blur-[1px] shadow-lg shadow-amber-950/40"
-                : "border-amber-400/50 bg-amber-500/15"
-            }`}
-          >
-            <span className="text-xs font-bold text-white drop-shadow">
-              Cassava Plot (Plot B)
-            </span>
-            <span className="text-[10px] font-mono text-amber-200 mt-0.5">
-              1.5 Hectares
-            </span>
-          </div>
+            return (
+              <div
+                key={p.id}
+                onClick={() => setSelectedPlotId(p.id)}
+                style={{ top: `${top}%`, right: right }}
+                className={`absolute w-44 h-36 border-2 rounded-2xl cursor-pointer transition-all flex flex-col items-center justify-center p-3 text-center ${
+                  selectedPlotId === p.id || selectedPlotId === "all"
+                    ? "border-emerald-400 bg-emerald-600/40 backdrop-blur-[1px] shadow-lg shadow-emerald-950/40"
+                    : "border-emerald-400/50 bg-emerald-600/15"
+                }`}
+              >
+                <span className="text-xs font-bold text-white drop-shadow">
+                  {p.name}
+                </span>
+                <span className="text-[10px] font-mono text-emerald-200 mt-0.5">
+                  {p.sizeHectares} Ha
+                </span>
+                <span className="text-[9px] text-white/80 mt-1 uppercase font-semibold">
+                  {p.crops?.[0] || "Active"}
+                </span>
+              </div>
+            );
+          })}
 
-          {/* Bottom Satellite Legend Filter Bar matching Screenshot 3 */}
+          {/* Bottom Satellite Legend Filter Bar */}
           <div className="absolute bottom-4 left-4 z-10 flex flex-wrap items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/10 text-white text-xs">
             <button
-              onClick={() => setSelectedPlot("A")}
-              className={`flex items-center gap-2 px-2.5 py-1 rounded-lg transition-colors ${
-                selectedPlot === "A" ? "bg-white/20 font-bold" : "hover:bg-white/10"
+              onClick={() => setSelectedPlotId("all")}
+              className={`px-2.5 py-1 rounded-lg transition-colors ${
+                selectedPlotId === "all" ? "bg-white/20 font-bold" : "hover:bg-white/10"
               }`}
             >
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              <span>Plot A — Maize Corn (2.0 Ha)</span>
+              All Plots ({plots.length})
             </button>
-            <span className="text-slate-600">|</span>
-            <button
-              onClick={() => setSelectedPlot("B")}
-              className={`flex items-center gap-2 px-2.5 py-1 rounded-lg transition-colors ${
-                selectedPlot === "B" ? "bg-white/20 font-bold" : "hover:bg-white/10"
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              <span>Plot B — Cassava (1.5 Ha)</span>
-            </button>
+            {plots.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedPlotId(p.id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors ${
+                  selectedPlotId === p.id ? "bg-white/20 font-bold" : "hover:bg-white/10"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="truncate max-w-[120px]">{p.name}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* AI Location & Seasonal Intelligence Guidance (As requested by user) */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Seasonal Intelligence & Agro-Climatic Guidance
-              </h3>
-              <p className="text-xs text-slate-500">
-                AI Guidance calibrated for Kwang, Jos South (Plateau Guinea Savannah)
-              </p>
-            </div>
+      {/* Full Registered Plots List */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
+        <h2 className="text-xl font-bold text-slate-900">
+          All Registered Parcels ({plots.length})
+        </h2>
+        {plots.length === 0 ? (
+          <p className="text-xs text-slate-500">
+            No parcels registered. Use the &ldquo;Add New Plot&rdquo; button above to add plots.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {plots.map((plot) => (
+              <div
+                key={plot.id}
+                className="p-5 rounded-2xl border border-slate-200/90 bg-[#fafbfa] space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900 text-sm">{plot.name}</h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    {plot.status || "Active"}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 space-y-1">
+                  <p>
+                    <strong>Size:</strong> {plot.sizeHectares} Hectares
+                  </p>
+                  <p>
+                    <strong>Location:</strong> {plot.location || farmLocation}
+                  </p>
+                  <p>
+                    <strong>Crops:</strong> {plot.crops?.join(", ") || "General Crop"}
+                  </p>
+                  {plot.landmark && (
+                    <p>
+                      <strong>Landmark:</strong> {plot.landmark}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-            Source: Nigerian Met Agency & IITA
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Advisory 1 */}
-          <div className="p-4 rounded-2xl bg-[#fafbfa] border border-slate-200/80 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <Sun className="w-4 h-4 text-amber-500" />
-              <span>Harvest Window: Yellow Maize</span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Tasseling phase complete. Dry season winds expected in 18 days. Optimal
-              pre-harvest harvesting window begins Nov 24–Dec 05.
-            </p>
-          </div>
-
-          {/* Advisory 2 */}
-          <div className="p-4 rounded-2xl bg-[#fafbfa] border border-slate-200/80 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <Droplets className="w-4 h-4 text-emerald-600" />
-              <span>Moisture & Soil Management</span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Jos South humidity dropping to 48%. Cassava tubers enter starch
-              consolidation stage. Mulching recommended on Plot B.
-            </p>
-          </div>
-
-          {/* Advisory 3 */}
-          <div className="p-4 rounded-2xl bg-[#fafbfa] border border-slate-200/80 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span>Pest Advisory: Fall Armyworm</span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Surrounding cluster reports FAW low activity. Bi-weekly foliage scan
-              advised via LetsFarm Crop Scanner camera.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Add Plot Modal */}
+      {/* Modals */}
       <AddPlotModal
         isOpen={isAddPlotOpen}
-        onClose={() => setIsAddPlotOpen(false)}
+        onClose={() => {
+          setIsAddPlotOpen(false);
+          loadFarmPlots();
+        }}
       />
-
-      {/* Edit Details Modal */}
       <EditFarmDetailsModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
       />
-
-      {/* Share Profile Modal */}
       <ShareProfileModal
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}

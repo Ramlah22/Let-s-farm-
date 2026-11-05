@@ -86,7 +86,13 @@ export default function Navbar() {
             {profile ? (
               <div className="flex items-center gap-3">
                 <Link
-                  href="/dashboard"
+                  href={
+                    profile.accountType === "off-taker"
+                      ? "/dashboard/offtaker"
+                      : profile.accountType === "consumer"
+                      ? "/dashboard/consumer"
+                      : "/dashboard"
+                  }
                   className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/70 rounded-full text-xs font-semibold text-emerald-800 transition-colors"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
