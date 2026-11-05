@@ -11,7 +11,14 @@ export default function Navbar() {
   const { profile, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all">
+    <header
+      className="sticky top-0 z-50 transition-all"
+      style={{
+        background:
+          "linear-gradient(135deg, #c8ecd5 0%, #a8dab8 50%, #8ecfa2 100%)",
+        borderBottom: "1px solid rgba(255,255,255,0.35)",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -26,7 +33,7 @@ export default function Navbar() {
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
+              <span className="text-xl font-bold tracking-tight group-hover:text-emerald-900 transition-colors" style={{ color: "#0a2e14" }}>
                 LetsFarm
               </span>
               <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-700 -mt-1 hidden sm:block">
@@ -39,31 +46,36 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               href="#solutions"
-              className="text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium transition-colors"
+              style={{ color: "#0d4a1f" }}
             >
               Solutions
             </Link>
             <Link
               href="#how-it-works"
-              className="text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium transition-colors"
+              style={{ color: "#0d4a1f" }}
             >
               How It Works
             </Link>
             <Link
               href="#marketplace"
-              className="text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium transition-colors"
+              style={{ color: "#0d4a1f" }}
             >
               Marketplace
             </Link>
             <Link
               href="#reach"
-              className="text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium transition-colors"
+              style={{ color: "#0d4a1f" }}
             >
               Reach (USSD/SMS)
             </Link>
             <Link
               href="#about-us"
-              className="text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium transition-colors"
+              style={{ color: "#0d4a1f" }}
             >
               About Us
             </Link>
@@ -73,13 +85,19 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-5">
             {profile ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200/70 rounded-full text-xs font-semibold text-emerald-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/70 rounded-full text-xs font-semibold text-emerald-800 transition-colors"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>
                     {profile.fullName || profile.companyName || "Member"} (
                     <span className="capitalize">{profile.accountType}</span>)
                   </span>
-                </div>
+                  <span className="text-[10px] text-emerald-600 font-bold ml-1">
+                    Dashboard →
+                  </span>
+                </Link>
                 <button
                   onClick={() => logout()}
                   title="Log out"
@@ -92,7 +110,8 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="text-sm font-semibold text-slate-700 hover:text-emerald-700 transition-colors px-2 py-1"
+                  className="text-sm font-semibold transition-colors px-2 py-1 rounded-lg"
+                  style={{ color: "#0d4a1f" }}
                 >
                   Sign In
                 </Link>
