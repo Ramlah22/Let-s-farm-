@@ -7,7 +7,7 @@ import { MapPin, Phone, Mail, ArrowUpRight, ShieldCheck, Heart } from "lucide-re
 
 export default function Footer() {
   return (
-    <footer className="bg-[#051c11] text-slate-300 border-t border-emerald-950/80 pt-16 pb-12">
+    <footer id="about-us" className="bg-[#051c11] text-slate-300 border-t border-emerald-950/80 pt-16 pb-12 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 pb-14 border-b border-emerald-900/40">

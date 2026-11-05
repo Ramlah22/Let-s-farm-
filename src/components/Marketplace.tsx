@@ -70,7 +70,7 @@ export default function Marketplace({ onActionClick }: MarketplaceProps) {
   return (
     <section
       id="marketplace"
-      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f3f8f5] via-[#e5efe8] to-[#edf4f0] border-t border-slate-200/70"
+      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-[#f3f8f5] via-[#e5efe8] to-[#edf4f0] border-t border-slate-200/70 scroll-mt-20"
     >
       {/* Background Soft Glows & Precision Grid */}
       <div className="absolute inset-0 pointer-events-none">

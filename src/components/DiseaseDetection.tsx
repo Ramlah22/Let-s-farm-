@@ -19,9 +19,10 @@ export default function DiseaseDetection() {
 
   return (
     <section
-      id="detect-diseases"
-      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-br from-[#03180e] via-[#072b1a] to-[#01140b] text-white"
+      id="how-it-works"
+      className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-br from-[#03180e] via-[#072b1a] to-[#01140b] text-white scroll-mt-20"
     >
+      <div id="detect-diseases" className="scroll-mt-28" />
       {/* Background Ambient Glows & Grid */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 -right-24 w-96 h-96 rounded-full bg-emerald-500/10 blur-[130px]" />
